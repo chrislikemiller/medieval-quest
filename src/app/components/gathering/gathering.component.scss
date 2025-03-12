@@ -1,0 +1,17 @@
+@import '../componentstyles.scss';
+@import '../../styles/variables.scss';
+
+.main {
+    @include component-main-style;
+}
+
+.gathering-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    button {
+        width: 20rem;
+        height: 2rem;
+    }
+}

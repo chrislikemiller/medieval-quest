@@ -1,0 +1,31 @@
+<div class="full-view">
+
+  <div class="sidebar">
+    <nav class="sidebar-nav top-nav">
+      <a routerLink="/population" routerLinkActive="active" class="nav-item">
+        Population
+      </a>
+      <a routerLink="/gathering" routerLinkActive="active" class="nav-item">
+        Gathering
+      </a>
+      <a routerLink="/buildings" routerLinkActive="active" class="nav-item">
+        Buildings
+      </a>
+    </nav>
+
+    <div class="spacer"></div>
+    
+    <nav class="sidebar-nav bottom-nav">
+      <a routerLink="/settings" routerLinkActive="active" class="nav-item settings">
+        Settings
+      </a>
+    </nav>
+  </div>
+
+  <div class="main-view">
+    <app-dashboard class="dashboard" />
+    <div class="content">
+      <router-outlet />
+    </div>
+  </div>
+</div>

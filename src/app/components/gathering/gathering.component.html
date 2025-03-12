@@ -1,0 +1,33 @@
+<div class="main">
+
+    <div class="gathering-container">
+        <h2>Resource Gathering</h2>
+
+        <div class="resource-info">
+            <p>Current wood: {{ store.wood$ | async }}</p>
+            <p>Current food: {{ store.food$ | async }}</p>
+            <p>Current stone: {{ store.stone$ | async }}</p>
+        </div>
+
+        <div class="gathering-actions">
+            <button class="gather-btn" (click)="gatherResource('wood')"
+                [disabled]="!(store.canStartGathering$ | async)">
+                Gather Wood (+10)
+            </button>
+
+            <button class="gather-btn" (click)="gatherResource('food')"
+                [disabled]="!(store.canStartGathering$ | async)">
+                Gather Food (+10)
+            </button>
+
+            <button class="gather-btn" (click)="gatherResource('stone')"
+                [disabled]="!(store.canStartGathering$ | async)">
+                Gather Stone (+10)
+            </button>
+        </div>
+        <div *ngIf="store.resourceUpdateError$ | async as errorMsg" class="error-message">
+            <p>{{ errorMsg }}</p>
+            <button (click)="dismissError()">Dismiss</button>
+        </div>
+    </div>
+</div>
