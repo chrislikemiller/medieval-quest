@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+      "*.ts": "typescript"
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "html.format.enable": true,
+    "css.format.enable": true,
+    "javascript.format.enable": true
+  }
+  

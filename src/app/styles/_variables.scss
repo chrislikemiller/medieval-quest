@@ -1,3 +1,7 @@
 $primary-color: #e9bd20;
+$primary-color-light: adjust-color($primary-color, $lightness: 15%);
+$primary-color-dark: adjust-color($primary-color, $lightness: -15%);
 $secondary-color: #cc872e;
-$card-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+$secondary-color-light: adjust-color($secondary-color, $lightness: 15%);
+$secondary-color-dark: adjust-color($secondary-color, $lightness: -15%);
+$dark-accent: #382b22;
