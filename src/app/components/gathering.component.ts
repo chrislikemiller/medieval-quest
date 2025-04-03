@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { AppStore } from '../store/app.store';
-import { VillagerGatheringType } from '../store/models/processes.model';
+import { VillagerGathering } from '../store/models/processes.model';
 import { HomeButtonComponent } from '../controls/home-button.component';
 import { SectionComponent } from '../controls/section.component';
 import { Router } from '@angular/router';
@@ -18,9 +18,9 @@ import { Router } from '@angular/router';
         <app-section
           [processes$]="store.gatheringProcesses$"
           sectionTitle="Villager gathering"
-          buttonTitle="Go"
-          (buttonClicked)="navigate('villager-gathering')"
-        >
+          buttonTitle="Navigate"
+          [isActionEnabled]="true"
+          route="/villager-gathering">
         </app-section>
 
         <!-- Farming -->
@@ -28,17 +28,17 @@ import { Router } from '@angular/router';
           [processes$]="store.gatheringProcesses$"
           sectionTitle="Farming"
           buttonTitle="Go"
-          (buttonClicked)="navigate('home')"
-        >
+          [isActionEnabled]="(store.isFarmingAvailable$ | async) ?? false"
+          route="farming">
         </app-section>
 
-        <!-- Quarry-->
+        <!-- Quarry -->
         <app-section
           [processes$]="store.gatheringProcesses$"
           sectionTitle="Quarry"
           buttonTitle="Go"
-          (buttonClicked)="navigate('home')"
-        >
+          [isActionEnabled]="true"
+          route="home">
         </app-section>
       </div>
     </div>
@@ -57,9 +57,5 @@ import { Router } from '@angular/router';
   ],
 })
 export class GatheringComponent {
-  constructor(public store: AppStore, private router: Router) {}
-
-  navigate(navPath: string) {
-    this.router.navigate([navPath]);
-  }
+  constructor(public store: AppStore) {}
 }

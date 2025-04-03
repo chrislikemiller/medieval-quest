@@ -1,4 +1,4 @@
-import { villagerGatherFood, VillagerGatheringType, villagerGatherStone, villagerGatherWood } from "./processes.model";
+import { villagerGatherFood, VillagerGathering, villagerGatherStone, villagerGatherWood } from "./processes.model";
 
 export type Resources = {
   wood: number;
@@ -6,7 +6,7 @@ export type Resources = {
   food: number;
 }
 
-export function toResourceKey(type : VillagerGatheringType) : 'wood' | 'stone' | 'food' {
+export function toResourceKey(type : VillagerGathering) : 'wood' | 'stone' | 'food' {
   if (type === villagerGatherWood) return 'wood';
   if (type === villagerGatherFood) return 'food';
   if (type === villagerGatherStone) return 'stone';
@@ -25,7 +25,7 @@ export function canUseResources(current: Resources, toBeConsumed: Partial<Resour
   return true;
 }
 
-export function useResources(current: Resources, toBeConsumed: Partial<Resources>): Resources {
+export function reduceResources(current: Resources, toBeConsumed: Partial<Resources>): Resources {
   for (const key in toBeConsumed) {
     var resourceKey = key as keyof Resources;
     if (toBeConsumed.hasOwnProperty(resourceKey)) {

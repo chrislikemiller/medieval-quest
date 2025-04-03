@@ -4,14 +4,15 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-home-button',
   imports: [RouterLink],
-  template: `<button class="home-button" routerLink="/">
+  template: `<button
+    class="home-button"
+    routerLink="/">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       width="24"
       height="24"
-      fill="currentColor"
-    >
+      fill="currentColor">
       <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
     </svg>
   </button>`,
@@ -38,7 +39,7 @@ import { RouterLink } from '@angular/router';
 
       .home-button:hover {
         background-color: vars.$secondary-color-dark;
-        transform: scale(1.05); 
+        transform: scale(1.05);
       }
 
       .home-button svg {

@@ -21,8 +21,7 @@ export class AuthGuard implements CanActivate {
 
     canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): MaybeAsync<GuardResult> {
         return this.authService.currentLoggedInUser.pipe(take(1), map(currentUser => {
-            this.logger.info("auth guard: ", currentUser);
-
+            this.logger.info("auth guard, current user: ", currentUser);
             if (currentUser) {
                 return true;
             }

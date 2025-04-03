@@ -1,39 +1,53 @@
-import { Population } from "./population.model";
-import { ProcessState } from "./processes.model";
-import { Resources } from "./resource.model";
+import { PeopleState } from './population.model';
+import { miner, People, Process, villager } from './processes.model';
+import { Resources } from './resource.model';
+
+export type BuildingLevelState = {
+  housing: number;
+  farming: number;
+  mine: number;
+  farmerTraining: number;
+  minerTraining: number;
+};
 
 export type AppState = {
-    username: string;
-    resources: Resources;
-    error: string | null;
-    houses: number;
-    population: Population;
-    processes: ProcessState
-}
+  username: string;
+  resources: Resources;
+  buildingLevelState: BuildingLevelState;
+  error: string | null;
+  population: {
+    readonly [key in People]: PeopleState;
+  };
+  processes: Process[];
+  // consumingRewardingMap: any;
+};
 
 export const initialResourceState: Resources = {
-    wood: 10,
-    stone: 10,
-    food: 20
+  wood: 10,
+  stone: 10,
+  food: 20,
 };
 
-export const initialPopulationState: Population = {
-    villagers: 2,
-    willBeVillagers: 0,
-    farmers: 0,
-    miners: 0,
-    hunters: 0
+export const initialBuildingsState: BuildingLevelState = {
+  housing: 1,
+  farming: 0,
+  mine: 0,
+  farmerTraining: 0,
+  minerTraining: 0,
 };
 
-export const initialProcessesState: ProcessState = {
-    activeProcesses: []
+export const initialPopulationState = {
+  villager: { available: 1, occupied: 0, acquiring: 0 },
+  farmer: { available: 0, occupied: 0, acquiring: 0 },
+  hunter: { available: 0, occupied: 0, acquiring: 0 },
+  miner: { available: 0, occupied: 0, acquiring: 0 },
 };
 
 export const initialState: AppState = {
-    username: "",
-    resources: initialResourceState,
-    population: initialPopulationState,
-    processes: initialProcessesState,
-    error: null,
-    houses: 5,
+  username: '',
+  resources: initialResourceState,
+  buildingLevelState: initialBuildingsState,
+  population: initialPopulationState,
+  processes: [],
+  error: null,
 };

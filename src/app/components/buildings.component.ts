@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
-import { BuildingType } from '../store/models/processes.model';
+import { GatheringBuilding } from '../store/models/processes.model';
 import { AppStore } from '../store/app.store';
 import { CommonModule } from '@angular/common';
 import { HomeButtonComponent } from '../controls/home-button.component';
 import { SectionComponent } from '../controls/section.component';
+import { ProcessService } from '../services/process.service';
 
 @Component({
   selector: 'app-buildings',
@@ -20,6 +21,7 @@ import { SectionComponent } from '../controls/section.component';
         [processes$]="store.buildingProcesses$"
         sectionTitle="Farms"
         buttonTitle="Build"
+        [isActionEnabled]="true"
         (buttonClicked)="buildBuilding('buildFarm')">
       </app-section>
 
@@ -28,6 +30,7 @@ import { SectionComponent } from '../controls/section.component';
         [processes$]="store.buildingProcesses$"
         sectionTitle="Mine"
         buttonTitle="Build"
+        [isActionEnabled]="true"
         (buttonClicked)="buildBuilding('buildMine')">
       </app-section>
     </div>
@@ -40,12 +43,9 @@ import { SectionComponent } from '../controls/section.component';
   ],
 })
 export class BuildingsComponent {
-  constructor(public store: AppStore) {}
+  constructor(public store: AppStore, private processService: ProcessService) {}
 
-  buildBuilding(buildingType: BuildingType) {
-    this.store.startBuilding({
-      type: buildingType,
-      duration: 2000,
-    });
+  buildBuilding(buildingType: GatheringBuilding) {
+    this.processService.startProcess(buildingType);
   }
 }

@@ -11,8 +11,16 @@ import { AppStore } from '../store/app.store';
   template: `
     <div class="login-form">
       <h2>Login</h2>
-      <input type="text" placeholder="Username" [(ngModel)]="username" />
-      <input type="password" placeholder="Password" [(ngModel)]="password" />
+      <input
+        class="textbox-theme"
+        type="text"
+        placeholder="Username"
+        [(ngModel)]="username" />
+      <input
+        class="textbox-theme"
+        type="password"
+        placeholder="Password"
+        [(ngModel)]="password" />
       <button class="button-theme" (click)="login()">Login</button>
       <p>Don't have an account? <a routerLink="/register">Register</a></p>
     </div>
@@ -22,7 +30,8 @@ import { AppStore } from '../store/app.store';
       .login-form {
         display: flex;
         flex-direction: column;
-        gap: .5rem;
+        gap: 0.5rem;
+        padding: 1rem;
       }
 
       .error-message {

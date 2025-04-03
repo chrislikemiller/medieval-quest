@@ -1,44 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Output, input } from '@angular/core';
+import { Component, EventEmitter, Input, Output, input } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Process } from '../store/models/processes.model';
 import { AppStore } from '../store/app.store';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { RouterModule } from '@angular/router';
+import { ProcessService } from '../services/process.service';
 
 @Component({
   selector: 'app-section',
-  imports: [CommonModule, BrowserAnimationsModule],
-  animations: [
-    trigger('routeAnimations', [
-      transition('* <=> *', [
-        // Set a common starting style for enter and leave
-        query(
-          ':enter, :leave',
-          [style({ position: 'absolute', width: '100%' })],
-          { optional: true }
-        ),
-        // Fade out the old component
-        query(
-          ':leave',
-          [style({ opacity: 1 }), animate('300ms', style({ opacity: 0 }))],
-          { optional: true }
-        ),
-        // Fade in the new component
-        query(
-          ':enter',
-          [style({ opacity: 0 }), animate('300ms', style({ opacity: 1 }))],
-          { optional: true }
-        ),
-      ]),
-    ]),
-  ],
+  imports: [CommonModule, RouterModule],
   template: /*html*/ `
     <div class="section">
       <div class="section-icon">
         <ng-content></ng-content>
       </div>
       <div class="title">{{ sectionTitle() }}</div>
-      <div class="processes" *ngIf="processes$() | async as processes">
+      <div
+        class="processes"
+        *ngIf="processes$() | async as processes">
         <div *ngFor="let process of processes">
           <div
             class="progress-bar"
@@ -47,7 +26,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
           <button
             *ngIf="process.completed"
             class="btn-claim"
-            (click)="claimReward(process.id)">
+            (click)="claimReward(process)">
             <svg
               class="svg-icon"
               fill="#fff"
@@ -65,7 +44,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
           <button
             *ngIf="!process.completed"
             class="btn-cancel"
-            (click)="cancelProcess(process.id)">
+            (click)="cancelProcess(process)">
             <svg
               class="svg-icon"
               fill="#fff"
@@ -78,13 +57,23 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
                 id="primary"
                 d="M13.41,12l6.3-6.29a1,1,0,1,0-1.42-1.42L12,10.59,5.71,4.29A1,1,0,0,0,4.29,5.71L10.59,12l-6.3,6.29a1,1,0,0,0,0,1.42,1,1,0,0,0,1.42,0L12,13.41l6.29,6.3a1,1,0,0,0,1.42,0,1,1,0,0,0,0-1.42Z"></path>
             </svg>
-            <div class="time-remaining" *ngIf="!process.completed">
+            <div
+              class="time-remaining"
+              *ngIf="!process.completed">
               {{ getTimeRemaining(process) }}
             </div>
           </button>
         </div>
       </div>
-      <div>
+      <div *ngIf="route()">
+        <button
+          [routerLink]="route()"
+          [disabled]="!isActionEnabled()"
+          class="nav-button button-theme">
+          {{ buttonTitle() }}
+        </button>
+      </div>
+      <div *ngIf="!route()">
         <button
           (click)="buttonClicked.emit()"
           [disabled]="!isActionEnabled()"
@@ -191,9 +180,10 @@ export class SectionComponent {
   readonly sectionTitle = input.required<string>();
   readonly buttonTitle = input.required<string>();
   readonly processes$ = input.required<Observable<Process[]>>();
-  readonly isActionEnabled = input<boolean>(true);
+  readonly isActionEnabled = input.required<boolean>();
+  readonly route = input<string>();
 
-  constructor(private store: AppStore) {
+  constructor(private processService: ProcessService) {
     this.buttonClicked = new EventEmitter<void>();
   }
 
@@ -224,12 +214,11 @@ export class SectionComponent {
       .padStart(2, '0')}`;
   }
 
-  claimReward(processId: string) {
-    this.store.claimReward(processId);
-    this.store.saveState();
+  claimReward(process: Process) {
+    this.processService.claimReward(process);
   }
 
-  cancelProcess(processId: string) {
-    this.store.cancelGathering(processId);
+  cancelProcess(process: Process) {
+    this.processService.cancelProcess(process);
   }
 }

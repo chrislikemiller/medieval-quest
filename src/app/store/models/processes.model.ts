@@ -1,72 +1,83 @@
-import { Resources } from './resource.model';
-
 export const villagerGatherWood = 'villagerGatherWood';
 export const villagerGatherFood = 'villagerGatherFood';
 export const villagerGatherStone = 'villagerGatherStone';
 
-export const buildHouse = 'buildHouse';
+export const upgradeHousing = 'upgradeHousing';
 export const buildFarm = 'buildFarm';
 export const buildMine = 'buildMine';
+export const buildHuntingGrounds = 'buildHuntingGrounds';
 
-export const recruitVillager = 'recruitVillager';
-export const trainFarmer = 'trainFarmer';
-export const trainHunter= 'trainHunter';
-export const trainMiner = 'trainMiner';
+export const buildFarmerTraining = 'buildFarmerTraining';
+export const buildMinerTraining = 'buildMinerTraining';
+export const buildHunterTraining = 'buildHunterTraining';
+
+export const villager = 'villager';
+export const farmer = 'farmer';
+export const miner = 'miner';
+export const hunter = 'hunter';
+
+export const farmerFarmsFood = 'farmerFarmsFood';
+
+export const minerMinesStone = 'minerMinesStone';
+export const minerMinesIronOre = 'minerMinesIronOre';
+
+export const hunterHuntsForHide = 'hunterHuntsForHide';
+export const hunterHuntsForFood = 'hunterHuntsForFood';
 
 export const gatheringTypes = [
   villagerGatherWood,
   villagerGatherFood,
   villagerGatherStone,
 ] as const;
+export const gatheringBuildingTypes = [buildFarm, buildMine] as const;
+export const trainingBuildingTypes = [
+  buildFarmerTraining,
+  buildMinerTraining,
+  buildHunterTraining,
+];
+export const specializedVillagers = [farmer, hunter, miner];
+export const miningTypes = [minerMinesStone, minerMinesIronOre];
+export const huntingTypes = [hunterHuntsForHide, hunterHuntsForFood];
 
-export const buildingTypes = [buildHouse, buildFarm, buildMine] as const;
+export type Villager = typeof villager;
+export type HousingUpgrading = typeof upgradeHousing;
+export type VillagerGathering = (typeof gatheringTypes)[number];
+export type GatheringBuilding = (typeof gatheringBuildingTypes)[number];
+export type TrainingBuilding = (typeof trainingBuildingTypes)[number];
+export type SpecializedVillager = (typeof specializedVillagers)[number];
+export type Farming = typeof farmerFarmsFood;
+export type Mining = (typeof miningTypes)[number];
+export type Hunting = (typeof huntingTypes)[number];
 
-export const personTypes = [recruitVillager, trainFarmer, trainHunter, trainMiner] as const;
+export type People = Villager | SpecializedVillager;
 
-export type VillagerGatheringType = (typeof gatheringTypes)[number];
-export type BuildingType = (typeof buildingTypes)[number];
-export type PersonType = (typeof personTypes)[number];
-export type ProcessType = VillagerGatheringType | BuildingType | PersonType;
+export type BuildingTypes = GatheringBuilding | TrainingBuilding; // + processing building
 
-export type ProcessOptions =
-  | { type: VillagerGatheringType; amount: number; occupiedVillager: number }
-  | { type: BuildingType; consumedMaterials: Partial<Resources> }
-  | {
-      type: PersonType;
-      consumedMaterials: Partial<Resources>;
-      trainedVillager: number;
-    };
+export type SpecializedActivityType = Farming | Hunting | Mining;
+
+export type ProcessType =
+  | HousingUpgrading
+  | VillagerGathering
+  | People
+  | BuildingTypes
+  | SpecializedActivityType;
 
 export type Process = {
   id: string;
-  options: ProcessOptions;
+  processType: ProcessType;
   startTime: number;
   endTime: number;
   completed: boolean;
 };
 
-export function isBuildingProcess(
-  options: ProcessOptions
-): options is { type: BuildingType; consumedMaterials: Partial<Resources> } {
-  return buildingTypes.includes(options.type as BuildingType);
+export function isBuildingProcess(processType: ProcessType) {
+  return gatheringBuildingTypes.includes(processType as GatheringBuilding);
 }
 
-export function isGatheringProcess(options: ProcessOptions): options is {
-  type: VillagerGatheringType;
-  amount: number;
-  occupiedVillager: number;
-} {
-  return gatheringTypes.includes(options.type as VillagerGatheringType);
+export function isGatheringProcess(processType: ProcessType) {
+  return gatheringTypes.includes(processType as VillagerGathering);
 }
 
-export function isPopulationProcess(options: ProcessOptions): options is {
-  type: PersonType;
-  consumedMaterials: Partial<Resources>;
-  trainedVillager: number;
-} {
-  return personTypes.includes(options.type as PersonType);
+export function isPopulationProcess(processType: ProcessType) {
+  return specializedVillagers.includes(processType as SpecializedVillager);
 }
-
-export type ProcessState = {
-  activeProcesses: Process[];
-};

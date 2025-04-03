@@ -1,11 +1,35 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { ChangeDetectorRef, Component } from '@angular/core';
+import {
+  ActivatedRouteSnapshot,
+  NavigationEnd,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 import { PopupBaseComponent } from './controls/base-popup.component';
 import { CommonModule } from '@angular/common';
 import { AppStore } from './store/app.store';
 import { ProcessComponent } from './components/process.component';
 import { AuthService } from './services/auth.service';
-import { distinctUntilChanged, Subject, takeUntil } from 'rxjs';
+import {
+  distinctUntilChanged,
+  filter,
+  Observable,
+  of,
+  Subject,
+  switchMap,
+  takeUntil,
+  tap,
+} from 'rxjs';
+
+import {
+  trigger,
+  transition,
+  style,
+  animate,
+  query,
+  group,
+} from '@angular/animations';
+import { Logger } from './services/logger.service';
 
 @Component({
   selector: 'app-root',
@@ -13,7 +37,7 @@ import { distinctUntilChanged, Subject, takeUntil } from 'rxjs';
   imports: [RouterOutlet, CommonModule, PopupBaseComponent, ProcessComponent],
   template: `
     <div class="full-view">
-      <div *ngIf="shouldShow" class="header">
+      <div *ngIf="shouldShow$ | async" class="header">
         <div
           class="popup-icon"
           (click)="popuppopulation.togglePopup()"
@@ -45,11 +69,11 @@ import { distinctUntilChanged, Subject, takeUntil } from 'rxjs';
         <div class="dashboard-stats">
           <div class="stat-card">
             <div>Houses</div>
-            <p>{{ store.houses$ | async }}</p>
+            <p>{{ store.housing$ | async }}</p>
           </div>
           <div class="stat-card">
             <div>Population</div>
-            <p>{{ store.population$ | async }}</p>
+            <p>{{ store.populationCount$ | async }}</p>
           </div>
           <div class="stat-card">
             <div>Villagers</div>
@@ -92,12 +116,13 @@ import { distinctUntilChanged, Subject, takeUntil } from 'rxjs';
         [class.show]="isVisible"
         [class.hide]="!isVisible"
         *ngIf="isVisible">
-        <p>{{ errorMessage }}</p>
+        <p>{{ errorMessage$ | async }}</p>
         <button class="button-theme" (click)="dismissError()">Dismiss</button>
       </div>
 
-      <div class="content">
-        <router-outlet></router-outlet>
+      <!-- <div class="content" [@routeAnimations]="animationDirection$ | async"> -->
+      <div class="content" [@routeAnimations]="animationState">
+        <router-outlet #outlet="outlet"></router-outlet>
       </div>
     </div>
   `,
@@ -203,7 +228,6 @@ import { distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 
       .content {
         height: 100vh;
-        padding: 1rem;
         background-color: #fffad5;
         background-repeat: no-repeat;
         background-size: cover;
@@ -222,40 +246,141 @@ import { distinctUntilChanged, Subject, takeUntil } from 'rxjs';
         }
       }
     `,
+  animations: [
+    trigger('routeAnimations', [
+      transition(':decrement', [
+        query(
+          ':enter, :leave',
+          [
+            style({
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+            }),
+          ],
+          { optional: true },
+        ),
+        group([
+          query(
+            ':leave',
+            animate(
+              '200ms cubic-bezier(0, 0, 0.58, 1)',
+              style({ transform: 'translateX(-100%)' }),
+            ),
+            { optional: true },
+          ),
+          query(
+            ':enter',
+            [
+              style({ transform: 'translateX(100%)' }),
+              animate(
+                '200ms cubic-bezier(0, 0, 0.58, 1)',
+                style({ transform: 'translateX(0%)' }),
+              ),
+            ],
+            { optional: true },
+          ),
+        ]),
+      ]),
+      transition(':increment', [
+        query(
+          ':enter, :leave',
+          [
+            style({
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+            }),
+          ],
+          { optional: true },
+        ),
+        group([
+          query(
+            ':leave',
+            animate(
+              '200ms cubic-bezier(0, 0, 0.58, 1)',
+              style({ transform: 'translateX(100%)' }),
+            ),
+            { optional: true },
+          ),
+          query(
+            ':enter',
+            [
+              style({ transform: 'translateX(-100%)' }),
+              animate(
+                '200ms cubic-bezier(0, 0, 0.58, 1)',
+                style({ transform: 'translateX(0%)' }),
+              ),
+            ],
+            { optional: true },
+          ),
+        ]),
+      ]),
+    ]),
+  ],
 })
 export class AppComponent {
   private destroy$ = new Subject<void>();
 
   shouldShow: boolean = false;
   title = 'medieval-quest';
-  totalPopulation: number = 0;
   isVisible: boolean;
-  errorMessage: string | null;
+  errorMessage$!: Observable<string | null>;
+  shouldShow$: Observable<boolean>;
+  previousLevel: number = 0;
+  animationState: number = 100;
 
-  constructor(public authService: AuthService, public store: AppStore) {
+  constructor(
+    public authService: AuthService,
+    public store: AppStore,
+    private router: Router,
+    private logger: Logger,
+  ) {
     this.isVisible = false;
-    this.errorMessage = null;
+    this.errorMessage$ = of(null);
+    this.shouldShow$ = authService.currentLoggedInUser.pipe(
+      distinctUntilChanged(),
+      switchMap((currentUser) => of(currentUser !== '')),
+    );
 
-    store.population$.subscribe((population) => {
-      this.totalPopulation = population;
-    });
-    authService.currentLoggedInUser
-      .pipe(distinctUntilChanged())
-      .subscribe((currentUser) => {
-        this.shouldShow = currentUser !== '';
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        const currentLevel = this.getCurrentNavigationLevel();
+        if (currentLevel > this.previousLevel) {
+          this.animationState--;
+        } else if (currentLevel <= this.previousLevel) {
+          this.animationState++;
+        }
+        this.previousLevel = currentLevel;
       });
   }
 
+  getCurrentNavigationLevel() {
+    let currentSnapshot = this.router.routerState.snapshot.root;
+    while (currentSnapshot && currentSnapshot.firstChild) {
+      currentSnapshot = currentSnapshot.firstChild;
+    }
+
+    if (currentSnapshot && currentSnapshot.data) {
+      return currentSnapshot.data['level'] ?? 0;
+    }
+  }
+
   ngOnInit() {
-    this.store.error$.pipe(takeUntil(this.destroy$)).subscribe((error) => {
-      this.isVisible = error !== null;
-      this.errorMessage = error;
-      if (error) {
-        setTimeout(() => {
-          this.dismissError();
-        }, 5000);
-      }
-    });
+    this.errorMessage$ = this.store.error$.pipe(
+      // takeUntil(this.destroy$),
+      switchMap((error) => {
+        this.isVisible = error !== null;
+        // this.errorMessage = error;
+        if (error) {
+          setTimeout(() => {
+            this.dismissError();
+          }, 5000);
+        }
+        return of(error);
+      }),
+    );
   }
 
   ngOnDestroy() {

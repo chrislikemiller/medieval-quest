@@ -4,24 +4,38 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { AppStore } from '../store/app.store';
+import { Logger } from '../services/logger.service';
 
 @Component({
   selector: 'app-register',
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="login-form">
+    <div class="register-form">
       <h2>Register</h2>
-      <input class="textbox-theme" type="text" placeholder="Username" [(ngModel)]="username" />
-      <input class="textbox-theme" type="password" placeholder="Password" [(ngModel)]="password" />
-      <button class="button-theme" (click)="register()">Register</button>
+      <input
+        class="textbox-theme"
+        type="text"
+        placeholder="Username"
+        [(ngModel)]="username" />
+      <input
+        class="textbox-theme"
+        type="password"
+        placeholder="Password"
+        [(ngModel)]="password" />
+      <button
+        class="button-theme"
+        (click)="register()">
+        Register
+      </button>
     </div>
   `,
   styles: [
     `
-      .login-form {
+      .register-form {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        padding: 1rem;
       }
 
       .error-message {
@@ -41,26 +55,29 @@ export class RegisterComponent {
     private authService: AuthService,
     private router: Router,
     private store: AppStore,
+    private logger: Logger
   ) {}
 
   async register() {
     this.error = `
     ${this.validateUsername(this.username)}
-    ${this.validatePassword(this.username)}
-    `;
+    ${this.validatePassword(this.password)}
+    `.trim();
     if (this.error.length > 0) {
+      this.logger.error(this.error);
       this.store.setError(this.error);
       return;
     }
 
     const register$ = await this.authService.register(
       this.username,
-      this.password,
+      this.password
     );
-    register$.subscribe((isSuccess) => {
+    register$.subscribe(isSuccess => {
       if (isSuccess) {
         this.router.navigate(['/login']);
       } else {
+        this.logger.error(this.error);
         this.store.setError('Username already exists');
       }
     });

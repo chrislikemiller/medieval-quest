@@ -2,8 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { AppStore } from '../store/app.store';
 import { SectionComponent } from '../controls/section.component';
-import { VillagerGatheringType } from '../store/models/processes.model';
+import { VillagerGathering } from '../store/models/processes.model';
 import { HomeButtonComponent } from '../controls/home-button.component';
+import { ProcessService } from '../services/process.service';
 
 @Component({
   selector: 'villager-gathering',
@@ -49,13 +50,9 @@ import { HomeButtonComponent } from '../controls/home-button.component';
   styles: ``,
 })
 export class VillagerGatheringComponent {
-  constructor(public store: AppStore) {}
+  constructor(public store: AppStore, private processService : ProcessService) {}
 
-  gatherResource(resourceType: VillagerGatheringType) {
-    this.store.startGathering({
-      type: resourceType,
-      amount: 10,
-      duration: 4000,
-    });
+  gatherResource(resourceType: VillagerGathering) {
+    this.processService.startProcess(resourceType);
   }
 }

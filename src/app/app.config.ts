@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection, isDevMode, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
-
+import { provideAnimations } from '@angular/platform-browser/animations';
 import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideState, provideStore } from '@ngrx/store';
@@ -20,6 +20,7 @@ export const appConfig: ApplicationConfig = {
     provideStore(),
     provideClientHydration(withEventReplay()),
     provideStoreDevtools({ maxAge: 25, logOnly: !isDevMode() }),
+    provideAnimations(),
     provideEffects(),
     importProvidersFrom(
       LoggerModule.forRoot({

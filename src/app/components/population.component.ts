@@ -1,13 +1,14 @@
 import { Component } from '@angular/core';
 import { AppStore } from '../store/app.store';
 import {
-  buildHouse,
-  PersonType,
-  recruitVillager,
+  upgradeHousing,
+  SpecializedVillager,
+  villager,
 } from '../store/models/processes.model';
 import { CommonModule } from '@angular/common';
 import { HomeButtonComponent } from '../controls/home-button.component';
 import { SectionComponent } from '../controls/section.component';
+import { ProcessService } from '../services/process.service';
 
 @Component({
   selector: 'app-population',
@@ -43,19 +44,17 @@ import { SectionComponent } from '../controls/section.component';
   `,
 })
 export class PopulationComponent {
+  constructor(public store: AppStore, private processService: ProcessService) {}
+
   buildHouse() {
-    this.store.startBuilding({
-      type: buildHouse,
-      duration: 5000,
-    });
+    this.processService.startProcess(upgradeHousing);
   }
-  constructor(public store: AppStore) {}
 
   recruitPeople() {
-    this.store.startTraining({ type: recruitVillager, duration: 2000 });
+    this.processService.startProcess(villager);
   }
 
-  trainPeople(personType: PersonType) {
-    this.store.startTraining({ type: personType, duration: 2000 });
+  trainPeople(personType: SpecializedVillager) {
+    this.processService.startProcess(personType);
   }
 }

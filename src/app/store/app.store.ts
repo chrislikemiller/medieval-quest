@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@angular/core';
+import { Inject, Injectable, OnInit } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { interval, Observable, of } from 'rxjs';
 import {
@@ -13,34 +13,37 @@ import {
   canUseResources,
   Resources,
   toResourceKey,
-  useResources,
+  reduceResources,
+  increaseResources,
 } from './models/resource.model';
 import {
-  BuildingType,
+  GatheringBuilding,
   Process,
-  ProcessState,
   ProcessType,
   isBuildingProcess,
   isGatheringProcess,
   isPopulationProcess,
-  PersonType,
-  recruitVillager,
-  ProcessOptions,
-  VillagerGatheringType,
+  SpecializedVillager,
+  villager,
+  VillagerGathering,
   villagerGatherWood,
   villagerGatherFood,
   villagerGatherStone,
-  trainFarmer,
-  trainHunter,
-  trainMiner,
+  farmer,
+  hunter,
+  miner,
+  farmerFarmsFood,
+  People,
+  upgradeHousing,
 } from './models/processes.model';
 import { v4 as uuidv4 } from 'uuid';
 import { AppState, initialState } from './models/app.model';
 import { ValidationResult } from './models/validation.model';
-import { Population, totalPopulation } from './models/population.model';
 import { PersistenceService } from '../services/persistence.interface.service';
 import { AuthService } from '../services/auth.service';
 import { Logger } from '../services/logger.service';
+import { Consuming } from '../services/consuming-rewarding/consuming';
+import { PeopleState } from './models/population.model';
 
 @Injectable({
   providedIn: 'root',
@@ -53,125 +56,182 @@ export class AppStore extends ComponentStore<AppState> {
     private authService: AuthService
   ) {
     super(initialState);
-
-    this.authService.currentLoggedInUser.subscribe((currentUser) => {
+    this.authService.currentLoggedInUser.subscribe(currentUser => {
       this.logger.info('store update on login change, logged in?', currentUser);
       if (currentUser !== '') {
         this.loadAppState(currentUser);
       }
     });
+
+    this.resetStateForDebug();
+  }
+
+  resetStateForDebug() {
+    this.persistenceService.saveAppState(initialState);
   }
 
   UNIT_MODIFIER = 1;
   MAX_PROCESSES = 10;
   MAX_VISIBLE_PROCESSES = 3;
 
-  readonly username$ = this.select((state) => state.username);
-  readonly error$ = this.select((state) => state.error);
-  readonly resources$ = this.select((state) => state.resources);
-  readonly wood$ = this.select((state) => state.resources.wood);
-  readonly stone$ = this.select((state) => state.resources.stone);
-  readonly food$ = this.select((state) => state.resources.food);
-  readonly houses$ = this.select((state) => state.houses);
-  readonly population$ = this.select((state) =>
-    totalPopulation(state.population)
+  readonly username$ = this.select(state => state.username);
+
+  readonly error$ = this.select(state => state.error);
+
+  readonly resources$ = this.select(state => state.resources);
+
+  readonly wood$ = this.select(state => state.resources.wood);
+
+  readonly stone$ = this.select(state => state.resources.stone);
+
+  readonly food$ = this.select(state => state.resources.food);
+
+  readonly housing$ = this.select(state => state.buildingLevelState.housing);
+
+  readonly populationCount$ = this.select(state =>
+    Object.values(state.population).reduce(
+      (sum, people) => sum + this.sumPeople(people),
+      0
+    )
   );
-  readonly villagers$ = this.select((state) => state.population.villagers);
-  readonly farmers$ = this.select((state) => state.population.farmers);
-  readonly hunters$ = this.select((state) => state.population.hunters);
-  readonly gatheringProcesses$ = this.select((state) =>
-    state.processes.activeProcesses.filter((p) => isGatheringProcess(p.options))
+
+  readonly villagers$ = this.select(state =>
+    this.sumPeople(state.population[villager])
   );
+
+  readonly farmers$ = this.select(state =>
+    this.sumPeople(state.population[farmer])
+  );
+
+  readonly hunters$ = this.select(state =>
+    this.sumPeople(state.population[hunter])
+  );
+
+  readonly gatheringProcesses$ = this.select(state =>
+    state.processes.filter(p => isGatheringProcess(p.processType))
+  );
+
+  readonly buildingLevels$ = this.select(state => state.buildingLevelState);
+
+  readonly isFarmingAvailable$ = this.select(
+    state => state.buildingLevelState.farming > 0
+  );
+
+  readonly farmingProcesses$ = this.select(state =>
+    state.processes.filter(p => p.processType === farmerFarmsFood)
+  );
+
   readonly woodProcesses$ = this.gatheringProcesses$.pipe(
-    map((processes) =>
-      processes.filter((p) => p.options.type === villagerGatherWood)
+    map(processes =>
+      processes.filter(p => p.processType === villagerGatherWood)
     )
   );
+
   readonly foodProcesses$ = this.gatheringProcesses$.pipe(
-    map((processes) =>
-      processes.filter((p) => p.options.type === villagerGatherFood)
+    map(processes =>
+      processes.filter(p => p.processType === villagerGatherFood)
     )
   );
+
   readonly stoneProcesses$ = this.gatheringProcesses$.pipe(
-    map((processes) =>
-      processes.filter((p) => p.options.type === villagerGatherStone)
+    map(processes =>
+      processes.filter(p => p.processType === villagerGatherStone)
     )
   );
-  readonly buildingProcesses$ = this.select((state) =>
-    state.processes.activeProcesses.filter((p) => isBuildingProcess(p.options))
-  );
-  
-  readonly recruitingProcesses$ = this.select(state => state.processes.activeProcesses.filter(p => p.options.type === recruitVillager));
 
-  readonly trainingProcesses$ = this.select((state) =>
-    state.processes.activeProcesses.filter((p) =>
-      isPopulationProcess(p.options)
-    )
-  );
-  readonly activeProcesses$ = this.select(
-    (state) => state.processes.activeProcesses
+  readonly buildingProcesses$ = this.select(state =>
+    state.processes.filter(p => p.processType === upgradeHousing)
   );
 
-  readonly sortedActiveProcesses$ = this.select(
-    this.activeProcesses$,
-    (processes) => [...processes].sort((a, b) => a.endTime - b.endTime)
+  readonly recruitingProcesses$ = this.select(state =>
+    state.processes.filter(p => p.processType === villager)
+  );
+
+  readonly trainingProcesses$ = this.select(state =>
+    state.processes.filter(p => isPopulationProcess(p.processType))
+  );
+  readonly activeProcesses$ = this.select(state => state.processes);
+
+  readonly sortedActiveProcesses$ = this.select(state =>
+    [...state.processes].sort((a, b) => a.endTime - b.endTime)
   );
 
   readonly visibleProcesses$ = this.select(
     this.sortedActiveProcesses$,
-    (processes) => processes.slice(0, this.MAX_VISIBLE_PROCESSES)
+    processes => processes.slice(0, this.MAX_VISIBLE_PROCESSES)
   );
 
   readonly hiddenProcessCount$ = this.select(
     this.sortedActiveProcesses$,
-    (processes) => Math.max(0, processes.length - this.MAX_VISIBLE_PROCESSES)
+    processes => Math.max(0, processes.length - this.MAX_VISIBLE_PROCESSES)
   );
 
   readonly canStartProcess$ = this.select(
-    this.activeProcesses$,
-    (processes) =>
-      processes.filter((p) => !p.completed).length < this.MAX_PROCESSES
+    state =>
+      state.processes.filter(p => !p.completed).length < this.MAX_PROCESSES
   );
 
   readonly canStartRecruiting$ = this.select(
     this.canStartProcess$,
     this.resources$,
-    this.select((state) => totalPopulation(state.population) < state.houses),
-    (canStartProcess, resources, canPeopleFitInHouses) =>
+    this.populationCount$,
+    this.housing$,
+    (canStartProcess, resources, population, houses) =>
       canStartProcess &&
       canUseResources(resources, { food: 10 }) &&
-      canPeopleFitInHouses
+      population < houses
   );
 
   readonly canStartBuilding$ = this.select(
     this.canStartProcess$,
+    this.arePeopleAvailable(villager, 1),
     this.resources$,
-    (canStartProcess, resources) =>
-      canStartProcess && canUseResources(resources, { wood: 10, stone: 10 })
+    this.buildingLevels$,
+    (canStartProcess, arePeopleAvailable, resources, buildingLevels) =>
+      canStartProcess &&
+      arePeopleAvailable &&
+      canUseResources(
+        resources,
+        Consuming.buildHouseResources[buildingLevels.housing].consumedMaterials // todo replace to accomodate backend
+      )
   );
 
+  arePeopleAvailable(people: People, count: number) {
+    return this.select(
+      this.state$,
+      this.canStartProcess$,
+      (state, canStart) => {
+        return canStart && state.population[people].available >= count;
+      }
+    );
+  }
+
   readonly canStartTraining$ = this.select(
+    this.state$,
     this.canStartProcess$,
-    this.villagers$,
-    (canStartProcess, villagers) => canStartProcess && villagers > 0
+    (state, canStartProcess) =>
+      canStartProcess && state.population[villager].available > 0
   );
 
   readonly canVillagerStartGathering$ = this.select(
+    this.state$,
     this.canStartProcess$,
-    this.villagers$,
-    (canStartProcess, villagers) => canStartProcess && villagers > 0
+    (state, canStartProcess) =>
+      canStartProcess && state.population[villager].available > 0
   );
 
   readonly canStartFarming$ = this.select(
+    this.state$,
     this.canStartProcess$,
-    this.farmers$,
-    (canStartProcess, farmers) => canStartProcess && farmers > 0
+    (state, canStartProcess) =>
+      canStartProcess && state.population[farmer].available > 0
   );
 
   readonly canStartHunting$ = this.select(
+    this.state$,
     this.canStartProcess$,
-    this.hunters$,
-    (canStartProcess, hunters) => canStartProcess && hunters > 0
+    (state, canStartProcess) =>
+      canStartProcess && state.population[hunter].available > 0
   );
 
   readonly updateUsername = this.updater((state, username: string) => {
@@ -193,56 +253,105 @@ export class AppStore extends ComponentStore<AppState> {
     }
   );
 
-  readonly updateHouses = this.updater((state) => {
-    return {
+  consumeResources = this.updater(
+    (state, toBeConsumed: Partial<Resources>) => ({
       ...state,
-      houses: state.houses + 1,
-    };
-  });
+      resources: reduceResources(state.resources, toBeConsumed),
+    })
+  );
 
-  updateVillagers() {
-    this.updater((state, unitModifier: number) => ({
+  rewardResources = this.updater((state, toBeRewarded: Partial<Resources>) => ({
+    ...state,
+    resources: increaseResources(state.resources, toBeRewarded),
+  }));
+
+  startAcquiringPeople(people: People, acquireCount: number) {
+    return this.startAcquiringPeopleInner({
+      people: people,
+      count: acquireCount,
+    });
+  }
+
+  private startAcquiringPeopleInner = this.updater(
+    (state, params: { people: People; count: number }) => ({
       ...state,
       population: {
         ...state.population,
-        willBeVillagers: state.population.willBeVillagers - unitModifier,
-        villagers: state.population.villagers + unitModifier,
+        [params.people]: {
+          ...state.population[params.people],
+          acquiring: state.population[params.people].acquiring + params.count,
+        },
       },
-    }))(this.UNIT_MODIFIER);
-    this.saveState();
+    })
+  );
+
+  finishAcquiringPeople(peopleType: People, occupyCount: number) {
+    return this.finishAcquiringPeopleInner({
+      people: peopleType,
+      count: occupyCount,
+    });
   }
 
-  updateTrainedPeople(personType: PersonType) {
-    this.updater((state, personType: PersonType) => {
-      return {
-        ...state,
-        population: this.doTraining(state.population, personType),
-      };
-    })(personType);
-    this.saveState();
+  private finishAcquiringPeopleInner = this.updater(
+    (state, params: { people: People; count: number }) => ({
+      ...state,
+      population: {
+        ...state.population,
+        [params.people]: {
+          ...state.population[params.people],
+          available: state.population[params.people].available + params.count,
+          acquiring: state.population[params.people].occupied - params.count,
+        },
+      },
+    })
+  );
+
+  occupyPeople(peopleType: People, occupyCount: number) {
+    return this.occupyPeopleInner({ people: peopleType, count: occupyCount });
   }
 
-  doTraining(population: Population, personType: PersonType): Population {
-    switch (personType) {
-      case recruitVillager:
-        throw new Error('You cannot train people to be villagers');
-      case trainFarmer:
-        return {
-          ...population,
-          farmers: population.farmers + this.UNIT_MODIFIER,
-        };
-      case trainHunter:
-        return {
-          ...population,
-          hunters: population.hunters + this.UNIT_MODIFIER,
-        };
-      case trainMiner:
-        return {
-          ...population,
-          hunters: population.miners + this.UNIT_MODIFIER,
-        };
-    }
+  private occupyPeopleInner = this.updater(
+    (state, params: { people: People; count: number }) => ({
+      ...state,
+      population: {
+        ...state.population,
+        [params.people]: {
+          ...state.population[params.people],
+          available: state.population[params.people].available - params.count,
+          occupied: state.population[params.people].occupied + params.count,
+        },
+      },
+    })
+  );
+
+  returnPeople(people: People, returnedPeopleCount: number) {
+    return this.returnPeopleInner({
+      people: people,
+      count: returnedPeopleCount,
+    });
   }
+
+  private returnPeopleInner = this.updater(
+    (state, params: { people: People; count: number }) => ({
+      ...state,
+      population: {
+        ...state.population,
+        [params.people]: {
+          ...state.population[params.people],
+          available: state.population[params.people].available + params.count,
+          occupied: state.population[params.people].occupied - params.count,
+        },
+      },
+    })
+  );
+
+  readonly updateHouses = this.updater(state => ({
+    ...state,
+    buildingLevelState: {
+      ...state.buildingLevelState,
+      housing: state.buildingLevelState.housing + 1,
+    },
+  }));
 
   readonly setError = this.updater((state, error: string | null) => ({
     ...state,
@@ -252,235 +361,29 @@ export class AppStore extends ComponentStore<AppState> {
   clearError() {
     return this.setError(null);
   }
-  addProcess(process: Process) {
-    this.updater((state, process: Process) => ({
-      ...state,
-      processes: {
-        ...state.processes,
-        activeProcesses: [...state.processes.activeProcesses, process],
-      },
-    }))(process);
-    this.saveState();
-  }
 
-  removeProcess(id: string) {
-    this.updater((state, id: string) => ({
-      ...state,
-      processes: {
-        ...state.processes,
-        activeProcesses: state.processes.activeProcesses.filter(
-          (p) => p.id !== id
-        ),
-      },
-    }))(id);
-    this.saveState();
-  }
+  addProcess = this.updater((state, process: Process) => ({
+    ...state,
+    processes: [...state.processes, process],
+  }));
 
-  completeProcess(id: string) {
-    this.updater((state, id: string) => ({
-      ...state,
-      processes: {
-        ...state.processes,
-        activeProcesses: state.processes.activeProcesses.map((p) =>
-          p.id === id ? { ...p, completed: true } : p
-        ),
-      },
-    }))(id);
-    this.saveState();
-  }
+  removeProcess = this.updater((state, id: string) => ({
+    ...state,
+    processes: state.processes.filter(p => p.id !== id),
+  }));
+
+  completeProcess = this.updater((state, id: string) => ({
+    ...state,
+    processes: state.processes.map(p =>
+      p.id === id ? { ...p, completed: true } : p
+    ),
+  }));
 
   // EFFECTS
 
-  readonly startTraining = this.effect<{ type: PersonType; duration: number }>(
-    (params$) =>
-      params$.pipe(
-        withLatestFrom(this.canStartProcess$),
-        switchMap(([params, canStart]) => {
-          if (!canStart) {
-            return of({
-              valid: false,
-              error: 'Maximum number of processes reached',
-            });
-          }
-
-          const options = {
-            type: params.type as PersonType,
-            consumedMaterials: { food: 10 },
-            trainedVillager: this.UNIT_MODIFIER,
-          };
-          const now = Date.now();
-          const process: Process = {
-            id: uuidv4(),
-            options: options,
-            startTime: now,
-            endTime: now + params.duration,
-            completed: false,
-          };
-
-          this.deductResources(options);
-          this.addProcess(process);
-          this.saveState();
-
-          return of({
-            valid: true,
-            processId: process.id,
-          });
-        })
-      )
-  );
-
-  readonly startBuilding = this.effect<{
-    type: BuildingType;
-    duration: number;
-  }>((params$) =>
-    params$.pipe(
-      withLatestFrom(this.canStartProcess$),
-      switchMap(([params, canStart]) => {
-        if (!canStart) {
-          return of({
-            valid: false,
-            error: 'Maximum number of processes reached',
-          });
-        }
-        const options = {
-          type: params.type as BuildingType,
-          consumedMaterials: { wood: 10, stone: 10 },
-        };
-        const now = Date.now();
-        const process: Process = {
-          id: uuidv4(),
-          options: options,
-          startTime: now,
-          endTime: now + params.duration,
-          completed: false,
-        };
-
-        this.deductResources(options);
-        this.addProcess(process);
-        this.saveState();
-
-        return of({
-          valid: true,
-          processId: process.id,
-        });
-      })
-    )
-  );
-
-  private deductResources(options: ProcessOptions) {
-    // todo, write updaters instead of this.get
-
-    if (isBuildingProcess(options)) {
-      if (canUseResources(this.get().resources, options.consumedMaterials)) {
-        // it's nested because of type guards
-        this.updateResources(
-          useResources(this.get().resources, options.consumedMaterials)
-        );
-      } else {
-        throw new Error('Not enough resources to build');
-      }
-    } else if (isPopulationProcess(options)) {
-      if (canUseResources(this.get().resources, options.consumedMaterials)) {
-        this.updateResources(
-          useResources(this.get().resources, options.consumedMaterials)
-        );
-        if (options.type === recruitVillager) {
-          this.get().population.willBeVillagers += options.trainedVillager;
-        } else {
-          this.get().population.villagers -= options.trainedVillager;
-        }
-      }
-    } else if (isGatheringProcess(options)) {
-      this.get().population.villagers -= options.occupiedVillager;
-    } else {
-      throw new Error('Invalid process type');
-    }
-  }
-
-  readonly startGathering = this.effect<{
-    type: ProcessType;
-    duration: number;
-    amount: number;
-  }>((params$) =>
-    params$.pipe(
-      withLatestFrom(this.canStartProcess$),
-      switchMap(([params, canStart]) => {
-        if (!canStart) {
-          return of({
-            valid: false,
-            error: 'Maximum number of gathering processes reached',
-          });
-        }
-
-        const options = {
-          type: params.type as VillagerGatheringType,
-          amount: params.amount,
-          occupiedVillager: this.UNIT_MODIFIER,
-        };
-        const now = Date.now();
-        const process: Process = {
-          id: uuidv4(),
-          options: options,
-          startTime: now,
-          endTime: now + params.duration,
-          completed: false,
-        };
-
-        this.deductResources(options);
-        this.addProcess(process);
-        this.saveState();
-
-        return of({
-          valid: true,
-          processId: process.id,
-        });
-      })
-    )
-  );
-
-  readonly claimReward = this.effect<string>((processId$) =>
+  readonly cancelProcess = this.effect<string>(processId$ =>
     processId$.pipe(
-      withLatestFrom(this.activeProcesses$),
-      switchMap(([id, activeProcesses]) => {
-        const process = activeProcesses.find((p) => p.id === id);
-        if (!process || !process.completed) {
-          this.logger.info('process failed', process);
-          return of({
-            valid: false,
-            error: 'Process not found or not completed',
-          });
-        }
-
-        if (isGatheringProcess(process.options)) {
-          const resourceUpdate: Partial<Resources> = {};
-          resourceUpdate[toResourceKey(process.options.type)] =
-            process.options.amount;
-          this.removeProcess(id);
-          this.get().population.villagers += process.options.occupiedVillager;
-          return of(this.updateResourcesWithValidation(resourceUpdate));
-        } else if (isBuildingProcess(process.options)) {
-          this.removeProcess(id);
-          this.saveState();
-          return of(this.updateHouses());
-        } else if (isPopulationProcess(process.options)) {
-          this.removeProcess(id);
-          this.saveState();
-          if (process.options.type === recruitVillager) {
-            return of(this.updateVillagers());
-          }
-          return of(this.updateTrainedPeople(process.options.type));
-        }
-        return of({
-          valid: false,
-          error: 'Invalid process type',
-        });
-      })
-    )
-  );
-
-  readonly cancelGathering = this.effect<string>((processId$) =>
-    processId$.pipe(
-      tap((id) => {
+      tap(id => {
         this.removeProcess(id);
         this.saveState();
       })
@@ -507,38 +410,34 @@ export class AppStore extends ComponentStore<AppState> {
   }
 
   loadProcessesState() {
-    this.effect<void>((trigger$) =>
+    this.effect<void>(trigger$ =>
       trigger$.pipe(
         tap(() => {
           const processState = this.get().processes;
-          this.logger.info('loadState state', processState);
+          this.logger.info('loadProcessesState', processState);
           const now = Date.now();
-          const updatedProcesses = processState.activeProcesses.map(
-            (process) => ({
-              ...process,
-              completed: process.completed || now >= process.endTime,
-            })
-          );
+          const updatedProcesses = processState.map(process => ({
+            ...process,
+            completed: process.completed || now >= process.endTime,
+          }));
 
           this.patchState({
-            processes: {
-              activeProcesses: updatedProcesses,
-            },
+            processes: updatedProcesses,
           });
         })
       )
     );
   }
 
-  readonly checkCompletedProcesses = this.effect<void>((trigger$) =>
+  readonly checkCompletedProcesses = this.effect<void>(trigger$ =>
     trigger$.pipe(
       switchMap(() => interval(1000)),
       withLatestFrom(this.activeProcesses$),
-      tap(([_, activeProcesses]) => {
+      tap(kv => {
         const now = Date.now();
         let updated = false;
-
-        activeProcesses.forEach((process) => {
+        const processes = kv[1];
+        processes.forEach(process => {
           if (!process.completed && now >= process.endTime) {
             this.completeProcess(process.id);
             updated = true;
@@ -553,7 +452,7 @@ export class AppStore extends ComponentStore<AppState> {
   );
 
   readonly updateResourcesWithValidation = this.effect<Partial<Resources>>(
-    (resourceUpdate$) =>
+    resourceUpdate$ =>
       resourceUpdate$.pipe(
         tap(() => this.clearError()),
         withLatestFrom(this.resources$),
@@ -570,7 +469,7 @@ export class AppStore extends ComponentStore<AppState> {
             this.setError(result.error);
           }
         }),
-        catchError((err) =>
+        catchError(err =>
           of(this.setError('An unexpected error occurred: ' + err))
         )
       )
@@ -593,5 +492,9 @@ export class AppStore extends ComponentStore<AppState> {
       valid: true,
       update: newState,
     });
+  }
+
+  sumPeople(people: PeopleState): number {
+    return people.available + people.occupied + people.acquiring;
   }
 }
