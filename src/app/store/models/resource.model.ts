@@ -6,13 +6,6 @@ export type Resources = {
   food: number;
 }
 
-export function toResourceKey(type : VillagerGathering) : 'wood' | 'stone' | 'food' {
-  if (type === villagerGatherWood) return 'wood';
-  if (type === villagerGatherFood) return 'food';
-  if (type === villagerGatherStone) return 'stone';
-  throw new Error(`Unknown type ${type}`);
-}
-
 export function canUseResources(current: Resources, toBeConsumed: Partial<Resources>): boolean {
   for (const key in toBeConsumed) {
     var resourceKey = key as keyof Resources

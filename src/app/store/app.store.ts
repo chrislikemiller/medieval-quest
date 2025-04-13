@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnInit } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { interval, Observable, of } from 'rxjs';
 import {
@@ -7,36 +7,27 @@ import {
   switchMap,
   catchError,
   map,
-  take,
 } from 'rxjs/operators';
 import {
   canUseResources,
   Resources,
-  toResourceKey,
   reduceResources,
   increaseResources,
 } from './models/resource.model';
 import {
-  GatheringBuilding,
   Process,
-  ProcessType,
-  isBuildingProcess,
   isGatheringProcess,
   isPopulationProcess,
-  SpecializedVillager,
   villager,
-  VillagerGathering,
   villagerGatherWood,
   villagerGatherFood,
   villagerGatherStone,
   farmer,
   hunter,
-  miner,
   farmerFarmsFood,
   People,
   upgradeHousing,
 } from './models/processes.model';
-import { v4 as uuidv4 } from 'uuid';
 import { AppState, initialState } from './models/app.model';
 import { ValidationResult } from './models/validation.model';
 import { PersistenceService } from '../services/persistence.interface.service';
@@ -63,7 +54,7 @@ export class AppStore extends ComponentStore<AppState> {
       }
     });
 
-    this.resetStateForDebug();
+    // this.resetStateForDebug();
   }
 
   resetStateForDebug() {
@@ -272,6 +263,13 @@ export class AppStore extends ComponentStore<AppState> {
     });
   }
 
+  cancelAcquiringPeople(people: People, acquireCount: number) {
+    return this.cancelAcquiringPeopleInner({
+      people: people,
+      count: acquireCount,
+    });
+  }
+
   private startAcquiringPeopleInner = this.updater(
     (state, params: { people: People; count: number }) => ({
       ...state,
@@ -280,6 +278,19 @@ export class AppStore extends ComponentStore<AppState> {
         [params.people]: {
           ...state.population[params.people],
           acquiring: state.population[params.people].acquiring + params.count,
+        },
+      },
+    })
+  );
+
+  private cancelAcquiringPeopleInner = this.updater(
+    (state, params: { people: People; count: number }) => ({
+      ...state,
+      population: {
+        ...state.population,
+        [params.people]: {
+          ...state.population[params.people],
+          acquiring: state.population[params.people].acquiring - params.count,
         },
       },
     })
@@ -300,7 +311,7 @@ export class AppStore extends ComponentStore<AppState> {
         [params.people]: {
           ...state.population[params.people],
           available: state.population[params.people].available + params.count,
-          acquiring: state.population[params.people].occupied - params.count,
+          acquiring: state.population[params.people].acquiring - params.count,
         },
       },
     })

@@ -1,0 +1,31 @@
+<div class="section">
+  <div class="section-icon">
+    <ng-content></ng-content>
+  </div>
+  <div class="title">{{ sectionTitle() }}</div>
+  <div class="processes">
+    <app-circle-progress 
+      *ngIf="activeProcess()"
+      [process]="activeProcess()!"
+      (onComplete)="handleProcessComplete($event)"
+      (onCancel)="handleProcessCancel($event)">
+    </app-circle-progress>
+  </div>
+
+  <div *ngIf="route()">
+    <button
+      [routerLink]="route()"
+      [disabled]="!isActionEnabled()"
+      class="nav-button button-theme">
+      {{ buttonTitle() }}
+    </button>
+  </div>
+  <div *ngIf="!route()">
+    <button
+      (click)="handleButtonClick()"
+      [disabled]="!isActionEnabled() || activeProcess()"
+      class="nav-button button-theme">
+      {{ buttonTitle() }}
+    </button>
+  </div>
+</div>

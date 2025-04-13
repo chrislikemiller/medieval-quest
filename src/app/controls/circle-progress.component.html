@@ -1,0 +1,44 @@
+<div
+  class="circle-progress-container"
+  [class.complete]="isComplete"
+  [class.animating]="isAnimating"
+  (click)="handleClick()">
+  <svg
+    class="circle-progress"
+    viewBox="0 0 100 100"
+    xmlns="http://www.w3.org/2000/svg">
+    <circle
+      class="progress-background"
+      cx="50"
+      cy="50"
+      r="42"
+      fill="none"></circle>
+    <circle
+      class="progress-bar"
+      cx="50"
+      cy="50"
+      r="42"
+      fill="none"
+      [style.stroke-dasharray]="circleCircumference"
+      [style.stroke-dashoffset]="circleOffset"></circle>
+
+    <!-- Center icon placeholder -->
+    <ng-content class="center-icon"></ng-content>
+
+    <!-- Completion indicator (only visible when complete) -->
+    <g
+      *ngIf="isComplete"
+      class="completion-indicator">
+      <circle
+        cx="75"
+        cy="75"
+        r="15"
+        fill="#4CAF50"></circle>
+      <path
+        d="M69 75 L73 79 L81 71"
+        stroke="white"
+        stroke-width="2"
+        fill="none"></path>
+    </g>
+  </svg>
+</div>

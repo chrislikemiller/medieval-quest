@@ -18,19 +18,19 @@ import { ProcessService } from '../services/process.service';
     <div>
       <!-- Build farm -->
       <app-section
-        [processes$]="store.buildingProcesses$"
         sectionTitle="Farms"
         buttonTitle="Build"
         [isActionEnabled]="true"
+        processType="buildFarm"
         (buttonClicked)="buildBuilding('buildFarm')">
       </app-section>
 
       <!-- Build mine -->
       <app-section
-        [processes$]="store.buildingProcesses$"
         sectionTitle="Mine"
         buttonTitle="Build"
         [isActionEnabled]="true"
+        processType="buildMine"
         (buttonClicked)="buildBuilding('buildMine')">
       </app-section>
     </div>

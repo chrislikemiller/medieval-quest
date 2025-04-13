@@ -8,7 +8,6 @@ import {
 import { PopupBaseComponent } from './controls/base-popup.component';
 import { CommonModule } from '@angular/common';
 import { AppStore } from './store/app.store';
-import { ProcessComponent } from './components/process.component';
 import { AuthService } from './services/auth.service';
 import {
   distinctUntilChanged,
@@ -34,7 +33,7 @@ import { Logger } from './services/logger.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, PopupBaseComponent, ProcessComponent],
+  imports: [RouterOutlet, CommonModule, PopupBaseComponent],
   template: `
     <div class="full-view">
       <div *ngIf="shouldShow$ | async" class="header">
@@ -50,12 +49,12 @@ import { Logger } from './services/logger.service';
           title="Resources">
           Res
         </div>
-        <div
+        <!-- <div
           class="popup-icon"
           (click)="popupprocess.togglePopup()"
           title="Processes">
           Proc
-        </div>
+        </div> -->
 
         <div class="spacer"></div>
         <div style="align-content: center; padding-inline: 1rem;">
@@ -107,9 +106,9 @@ import { Logger } from './services/logger.service';
         </div>
       </popup-base>
 
-      <popup-base class="popup popup-process" #popupprocess>
+      <!-- <popup-base class="popup popup-process" #popupprocess>
         <app-process class="progress-bars"></app-process>
-      </popup-base>
+      </popup-base> -->
 
       <div
         class="error-message"

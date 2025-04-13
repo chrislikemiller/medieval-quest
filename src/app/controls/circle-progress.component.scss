@@ -1,0 +1,51 @@
+.circle-progress-container {
+  position: relative;
+  width: 4rem; // Smaller from 5rem to 4rem
+  height: 4rem; // Smaller from 5rem to 4rem
+  cursor: pointer;
+  transition: transform 0.3s ease;
+
+  &.animating {
+    transform: scale(1.1);
+  }
+
+  &.complete {
+    .progress-bar {
+      transition: stroke-dashoffset 0.3s ease;
+    }
+  }
+}
+
+.circle-progress {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); // This is correct to start from 12 o'clock
+}
+
+.progress-background {
+  stroke: rgba(76, 175, 80, 0.2); // Faded green color
+  stroke-width: 8px; // Doubled from 4px
+}
+
+.progress-bar {
+  stroke: #4caf50;
+  stroke-linecap: round;
+  stroke-width: 8px; // Doubled from 4px
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.center-icon {
+  transform: translate(50%, 50%);
+
+  // Ensure the SVG icon is centered
+  svg {
+    width: 60%;
+    height: 60%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.completion-indicator {
+  // The completion indicator should remain visible when rotated back
+  transform: rotate(90deg); // Counter-rotate to fix orientation
+}

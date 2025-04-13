@@ -6,6 +6,7 @@ import { VillagerGathering } from '../store/models/processes.model';
 import { HomeButtonComponent } from '../controls/home-button.component';
 import { SectionComponent } from '../controls/section.component';
 import { Router } from '@angular/router';
+import { ProcessService } from '../services/process.service';
 
 @Component({
   selector: 'app-gathering',
@@ -13,35 +14,34 @@ import { Router } from '@angular/router';
   imports: [CommonModule, HomeButtonComponent, SectionComponent],
   template: `<div class="main">
     <div class="gathering-container">
-      <div class="gathering-actions">
         <!-- Villager gathering -->
         <app-section
-          [processes$]="store.gatheringProcesses$"
           sectionTitle="Villager gathering"
           buttonTitle="Navigate"
           [isActionEnabled]="true"
-          route="/villager-gathering">
+          route="/villager-gathering"
+          processType="villager-gathering"
+          (buttonClicked)="onVillagerGatheringClick()">
         </app-section>
-
         <!-- Farming -->
         <app-section
-          [processes$]="store.gatheringProcesses$"
           sectionTitle="Farming"
           buttonTitle="Go"
           [isActionEnabled]="(store.isFarmingAvailable$ | async) ?? false"
-          route="farming">
+          route="farming"
+          processType="farming"
+          (buttonClicked)="onFarmingClick()">
         </app-section>
-
         <!-- Quarry -->
         <app-section
-          [processes$]="store.gatheringProcesses$"
           sectionTitle="Quarry"
           buttonTitle="Go"
           [isActionEnabled]="true"
-          route="home">
+          route="home"
+          processType="quarry"
+          (buttonClicked)="onQuarryClick()">
         </app-section>
       </div>
-    </div>
     <app-home-button></app-home-button>
   </div>`,
   styles: [
@@ -52,10 +52,31 @@ import { Router } from '@angular/router';
         flex-direction: column;
         button {
         }
+      
       }
     `,
   ],
 })
 export class GatheringComponent {
-  constructor(public store: AppStore) {}
+  constructor(
+    public store: AppStore, 
+    private router: Router,
+    private processService: ProcessService,
+    private ngZone: NgZone
+  ) {}
+
+  onVillagerGatheringClick() {
+    // Handle villager gathering action or navigation
+    this.router.navigate(['/villager-gathering']);
+  }
+
+  onFarmingClick() {
+    // Handle farming action or navigation
+    this.router.navigate(['farming']);
+  }
+
+  onQuarryClick() {
+    // Handle quarry action or navigation
+    this.router.navigate(['home']);
+  }
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { AppStore } from '../store/app.store';
 import {
   upgradeHousing,
@@ -21,19 +21,21 @@ import { ProcessService } from '../services/process.service';
   template: `<div class="main">
     <div>
       <app-section
+        #houseSection
         class=""
         sectionTitle="Build house"
         buttonTitle="Go"
-        (buttonClicked)="buildHouse()"
-        [processes$]="store.buildingProcesses$"
+        processType="upgradeHousing"
+        (buttonClicked)="buildHouse(houseSection)"
         [isActionEnabled]="(store.canStartBuilding$ | async) ?? false">
       </app-section>
       <app-section
+        #recruitSection
         class=""
         sectionTitle="Recruit people"
-        buttonTitle="Go"
-        (buttonClicked)="recruitPeople()"
-        [processes$]="store.recruitingProcesses$"
+        buttonTitle="Go" 
+        processType="villager"
+        (buttonClicked)="recruitPeople(recruitSection)"
         [isActionEnabled]="(store.canStartRecruiting$ | async) ?? false">
       </app-section>
     </div>
@@ -46,15 +48,18 @@ import { ProcessService } from '../services/process.service';
 export class PopulationComponent {
   constructor(public store: AppStore, private processService: ProcessService) {}
 
-  buildHouse() {
-    this.processService.startProcess(upgradeHousing);
+  buildHouse(section: SectionComponent) {
+    const process = this.processService.startProcess(upgradeHousing);
+    section.setProcess(process);
   }
 
-  recruitPeople() {
-    this.processService.startProcess(villager);
+  recruitPeople(section: SectionComponent) {
+    const process = this.processService.startProcess(villager);
+    section.setProcess(process);
   }
 
-  trainPeople(personType: SpecializedVillager) {
-    this.processService.startProcess(personType);
+  trainPeople(personType: SpecializedVillager, section: SectionComponent) {
+    const process = this.processService.startProcess(personType);
+    section.setProcess(process);
   }
 }

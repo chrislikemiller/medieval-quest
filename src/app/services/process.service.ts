@@ -14,6 +14,7 @@ import {
 import { RewardsService } from './rewards.service';
 import { reduceResources } from '../store/models/resource.model';
 import { Subject, interval, switchMap, takeUntil, firstValueFrom } from 'rxjs';
+import { Logger } from './logger.service';
 
 @Injectable({
   providedIn: 'root',
@@ -22,7 +23,11 @@ export class ProcessService implements OnDestroy {
   private destroy$ = new Subject<void>();
   private updateTrigger$ = new Subject<void>();
 
-  constructor(private rewardService: RewardsService, private store: AppStore) {
+  constructor(
+    private rewardService: RewardsService,
+    private store: AppStore,
+    private logger: Logger
+  ) {
     interval(1000)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.updateTrigger$.next());
@@ -35,7 +40,8 @@ export class ProcessService implements OnDestroy {
     this.destroy$.complete();
   }
 
-  startProcess(processType: ProcessType) {
+  startProcess(processType: ProcessType): Process {
+    this.logger.log('Starting process:', processType);
     const options = this.rewardService.consumeStartingResources(processType);
     this.store.consumeResources(options.consumedMaterials);
     this.occupyPeople(processType, options.occupiedPersons);
@@ -51,9 +57,16 @@ export class ProcessService implements OnDestroy {
 
     this.store.addProcess(process);
     this.store.saveState();
+
+    return process;
   }
 
   occupyPeople(processType: ProcessType, occupiedPersons: number) {
+    this.logger.log(
+      'Occupying people for process:',
+      processType,
+      occupiedPersons
+    );
     if (processType === villager) {
       this.store.startAcquiringPeople(villager, 1);
     } else {
@@ -62,6 +75,11 @@ export class ProcessService implements OnDestroy {
   }
 
   claimReward(process: Process) {
+    this.logger.log(
+      'Claiming reward for process:',
+      process.processType,
+      process.id
+    );
     const options = this.rewardService.claimRewardResources(
       process.processType
     );
@@ -89,5 +107,19 @@ export class ProcessService implements OnDestroy {
     this.store.saveState();
   }
 
-  cancelProcess(process: Process) {}
+  cancelProcess(process: Process) {
+    if (process.processType === villager) {
+      this.store.cancelAcquiringPeople(villager, 1);
+    } else {
+      this.logger.log('Cancelling process:', process.processType, process.id);
+      const options = this.rewardService.consumeStartingResources(
+        process.processType
+      );
+      this.logger.log('Cancelling process options:', options);
+      this.store.rewardResources(options.consumedMaterials);
+      this.store.returnPeople(villager, options.occupiedPersons);
+    }
+    this.store.removeProcess(process.id);
+    this.store.saveState();
+  }
 }

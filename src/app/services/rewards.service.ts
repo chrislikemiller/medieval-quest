@@ -21,7 +21,6 @@ import {
   StartProcessOptions,
 } from './consuming-rewarding/consuming';
 import { AppStore } from '../store/app.store';
-import { map, Subject, takeUntil } from 'rxjs';
 import {
   BuildingLevelState,
   initialBuildingsState,
@@ -43,7 +42,7 @@ export class RewardsService {
     upgradeHousing: Consuming.buildHouseResources,
     villager: Consuming.recruitVillagerResources,
     villagerGatherWood: Consuming.villagerGathering,
-    villagerGatherFod: Consuming.villagerGathering,
+    villagerGatherFood: Consuming.villagerGathering,
     villagerGatherStone: Consuming.villagerGathering,
   };
 
