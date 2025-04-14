@@ -46,7 +46,6 @@ import { ProcessService } from '../services/process.service';
   </div>`,
   styles: [
     `
-      @use '../styles/variables' as vars;
       .gathering-actions {
         display: flex;
         flex-direction: column;

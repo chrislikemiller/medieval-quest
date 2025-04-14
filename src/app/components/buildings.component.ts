@@ -38,7 +38,6 @@ import { ProcessService } from '../services/process.service';
   </div>`,
   styles: [
     `
-      @use '../styles/variables.scss' as vars;
     `,
   ],
 })

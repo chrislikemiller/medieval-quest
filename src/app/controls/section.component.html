@@ -1,9 +1,9 @@
-<div class="section">
-  <div class="section-icon">
+<div class="grid grid-cols-[auto_1fr_auto_auto] items-center p-4 m-2 border-2 border-dark-accent rounded-2xl">
+  <div class="flex items-center">
     <ng-content></ng-content>
   </div>
-  <div class="title">{{ sectionTitle() }}</div>
-  <div class="processes">
+  <div class="px-8 text-lg">{{ sectionTitle() }}</div>
+  <div class="flex justify-center items-center w-16 h-16">
     <app-circle-progress 
       *ngIf="activeProcess()"
       [process]="activeProcess()!"
@@ -16,7 +16,7 @@
     <button
       [routerLink]="route()"
       [disabled]="!isActionEnabled()"
-      class="nav-button button-theme">
+      class="min-w-20 button-theme">
       {{ buttonTitle() }}
     </button>
   </div>
@@ -24,7 +24,7 @@
     <button
       (click)="handleButtonClick()"
       [disabled]="!isActionEnabled() || activeProcess()"
-      class="nav-button button-theme">
+      class="min-w-20 button-theme">
       {{ buttonTitle() }}
     </button>
   </div>

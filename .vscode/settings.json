@@ -1,12 +1,15 @@
 {
     "files.associations": {
-      "*.ts": "typescript"
+      "*.ts": "typescript",
+      "*.scss": "tailwindcss"
+
     },
     "[typescript]": {
       "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "html.format.enable": true,
     "css.format.enable": true,
+    "scss.format.enable": true,
     "javascript.format.enable": true
   }
   
